@@ -40,7 +40,6 @@ setup(
     install_requires=[
         'torch>=1.10',
         'einops>=0.6.1',
-        'pykeops>=2.1.2',
     ],
     ext_modules=ext_modules,
     cmdclass={"build_ext": BuildExtension},

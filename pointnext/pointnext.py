@@ -1,6 +1,5 @@
 from collections import namedtuple
 from typing import Union
-from pykeops.torch import LazyTensor
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -9,20 +8,6 @@ from einops import repeat, rearrange
 # from .utils import farthest_point_sampling, ball_query_pytorch
 from .ops import ball_query, furthest_point_sample, three_interpolation
 
-__TAICHI__ = False
-__KEOPS__ = True
-
-
-def enable_taichi():
-    import taichi as ti
-    global __TAICHI__
-    __TAICHI__ = True
-    ti.init(ti.cuda)
-
-
-def disable_keops():
-    global __KEOPS__
-    __KEOPS__ = False
 
 
 def exists(val):
