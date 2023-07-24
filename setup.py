@@ -1,5 +1,8 @@
+from pathlib import Path
 from setuptools import setup, find_packages
 from torch.utils.cpp_extension import BuildExtension, CppExtension, CUDAExtension, CUDA_HOME
+
+thisdir = Path(__file__).parent
 
 ext_modules = [
     CUDAExtension(
@@ -15,13 +18,15 @@ ext_modules = [
             'csrc/sampling.cpp',
             'csrc/sampling_gpu.cu',
         ],
-        extra_compile_args={'nvcc': ['-O3']})
+        extra_compile_args={'nvcc': ['-O3']},
+        include_dirs=[thisdir / 'csrc'],
+    )
 ]
 
 setup(
     name='pointnext',
     packages=find_packages(exclude=("csrc")),
-    version='0.0.2',
+    version='0.0.3',
     license='MIT',
     description='PointNext - Pytorch',
     author='Kaidi Shen',
