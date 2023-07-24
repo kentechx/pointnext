@@ -6,7 +6,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from einops import repeat, rearrange
-from .utils import farthest_point_sampling, ball_query_pytorch
+# from .utils import farthest_point_sampling, ball_query_pytorch
+from .ops import ball_query, furthest_point_sample, three_interpolation
 
 __TAICHI__ = False
 __KEOPS__ = True
@@ -43,21 +44,19 @@ def downsample_fps(xyz, n_sample):
         sample_idx = torch.arange(n_sample, device=xyz.device)
         sample_idx = repeat(sample_idx, 'n -> b n', b=xyz.shape[0])
         return SampleResult(None, xyz.clone(), sample_idx, None)
-    _xyz = rearrange(xyz, 'b d n -> b n d')
-    sample_idx = farthest_point_sampling(_xyz, n_sample, start_idx=0)  # (b, k)
+    _xyz = rearrange(xyz, 'b d n -> b n d').contiguous()
+    sample_idx = furthest_point_sample(_xyz, n_sample).long()  # (b, k)
     sample_xyz = xyz.gather(-1, repeat(sample_idx, 'b k -> b d k', d=xyz.shape[1]))  # (b, 3, k)
     return SampleResult(None, sample_xyz, sample_idx, None)
 
 
 def _ball_query(src, query, radius, k):
     # conduct ball query on dim 1
-    src = rearrange(src, 'b d n -> b n d')
-    query = rearrange(query, 'b d m -> b m d')
-    if __TAICHI__:
-        from .taichi import ball_query
-        return ball_query(src, query, radius, k)
-    else:
-        return ball_query_pytorch(src, query, radius, k)
+    src = rearrange(src, 'b d n -> b n d').contiguous()
+    query = rearrange(query, 'b d m -> b m d').contiguous()
+    idx = ball_query(src, query, radius, k).long()
+    dists = None
+    return idx, dists
 
 
 def cdist(x, y=None):
@@ -71,13 +70,6 @@ def cdist(x, y=None):
     else:
         x = rearrange(x, 'b d n -> b n d')
         return torch.cdist(x, x)
-
-
-def knn(src, query, k):
-    dists = cdist(query, src)  # (b, m, n)
-    idx = dists.topk(k, dim=-1, largest=False, sorted=False)[1]  # (b, m, k)
-    dists = dists.gather(-1, idx)  # (b, m, k)
-    return idx, dists
 
 
 def gather(x, idx):
@@ -178,6 +170,7 @@ class UpBlock(nn.Module):
     def __init__(self, in_dim, out_dim, k=3, eps=1e-5):
         super().__init__()
         self.k = k
+        assert k == 3, "only support k=3"
         self.eps = eps
         dims = [in_dim, out_dim, out_dim]
         self.conv = nn.Sequential(*[
@@ -189,16 +182,10 @@ class UpBlock(nn.Module):
 
     def route(self, src_x, src_xyz, dst_x, dst_xyz, neighbor_idx=None, dists=None):
         # use knn and weighted average to get the features
-        if not exists(neighbor_idx):
-            neighbor_idx, dists = knn(src_xyz, dst_xyz, self.k)  # (b, m, k)
-
-        weights = 1. / (dists + self.eps)  # (b, m, k)
-        weights = weights / weights.sum(dim=-1, keepdim=True)  # (b, m, k)
-
-        neighbor_x = gather(src_x, neighbor_idx)  # (b, d, m, k)
-        neighbor_x = (weights[:, None] * neighbor_x).sum(dim=-1)  # (b, d, m)
-
-        dst_x = torch.cat([dst_x, neighbor_x], dim=1)  # (b, d+d', m)
+        src_xyz = rearrange(src_xyz, 'b d n -> b n d').contiguous()
+        dst_xyz = rearrange(dst_x, 'b d m -> b m d').contiguous()
+        lerp_x = three_interpolation(src_xyz, src_x, dst_xyz)
+        dst_x = torch.cat([dst_x, lerp_x], dim=1)  # (b, d+d', m)
         return dst_x
 
     def forward(self, x, xyz, sub_x, sub_xyz):
