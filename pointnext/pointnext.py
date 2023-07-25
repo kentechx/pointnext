@@ -9,7 +9,6 @@ from einops import repeat, rearrange
 from .ops import ball_query, furthest_point_sample, three_interpolation
 
 
-
 def exists(val):
     return val is not None
 
@@ -191,7 +190,17 @@ class PointNextEncoder(nn.Module):
             k=32,
             sa_layers=1,
     ):
+        """
+        :param in_dim: the dim of input features
+        :param dims: dims of each stage
+        :param blocks: number of blocks in each stage
+        :param strides: strides of each stage
+        :param radius: the first radius of sa layer
+        :param k: k at each stage
+        :param sa_layers: number of sa layers in each stage
+        """
         super().__init__()
+        self.encoder_dims = dims
 
         self.stem = nn.Sequential(
             nn.Conv1d(in_dim, dims[0], 1, bias=False),
@@ -270,3 +279,23 @@ class PointNext(nn.Module):
             out = out + self.category_emb(category)[:, :, None]
         out = self.head(out)
         return out
+
+
+def pointnext_s(**kwargs):
+    model_kwargs = dict(blocks=[1, 1, 1, 1], sa_layers=2, **kwargs)
+    return PointNextEncoder(**model_kwargs)
+
+
+def pointnext_b(**kwargs):
+    model_kwargs = dict(blocks=[2, 3, 2, 2], sa_layers=1, **kwargs)
+    return PointNextEncoder(**model_kwargs)
+
+
+def pointnext_l(**kwargs):
+    model_kwargs = dict(blocks=[3, 5, 3, 3], sa_layers=1, **kwargs)
+    return PointNextEncoder(**model_kwargs)
+
+
+def pointnext_xl(**kwargs):
+    model_kwargs = dict(dims=[64, 128, 256, 512, 1024], blocks=[4, 7, 4, 4], sa_layers=1, **kwargs)
+    return PointNextEncoder(**model_kwargs)
