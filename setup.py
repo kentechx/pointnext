@@ -42,7 +42,7 @@ setup(
         'einops>=0.6.1',
     ],
     ext_modules=ext_modules,
-    cmdclass={"build_ext": BuildExtension},
+    cmdclass={"build_ext": BuildExtension.with_options(no_python_abi_suffix=True)},
     classifiers=[
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
         'License :: OSI Approved :: MIT License',

@@ -7,13 +7,13 @@
 #include <vector>
 
 
-int group_points_wrapper_fast(int b, int c, int n, int npoints, int nsample, 
+void group_points_wrapper_fast(int64_t b, int64_t c, int64_t n, int64_t npoints, int64_t nsample,
     at::Tensor points_tensor, at::Tensor idx_tensor, at::Tensor out_tensor);
 
 void group_points_kernel_launcher_fast(int b, int c, int n, int npoints, int nsample, 
     const float *points, const int *idx, float *out);
 
-int group_points_grad_wrapper_fast(int b, int c, int n, int npoints, int nsample, 
+void group_points_grad_wrapper_fast(int64_t b, int64_t c, int64_t n, int64_t npoints, int64_t nsample,
     at::Tensor grad_out_tensor, at::Tensor idx_tensor, at::Tensor grad_points_tensor);
 
 void group_points_grad_kernel_launcher_fast(int b, int c, int n, int npoints, int nsample, 

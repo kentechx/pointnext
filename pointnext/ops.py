@@ -3,7 +3,10 @@ from typing import Tuple
 
 import torch
 from torch.autograd import Function
-from pointnext import _C
+from pathlib import Path
+torch.ops.load_library(Path(__file__).parent / '_C.so')
+_C = torch.ops.my_ops
+# from pointnext import _C
 
 
 class FurthestPointSampling(Function):
@@ -21,10 +24,8 @@ class FurthestPointSampling(Function):
         assert xyz.is_contiguous()
 
         B, N, _ = xyz.size()
-        # output = torch.cuda.IntTensor(B, npoint, device=xyz.device)
-        # temp = torch.cuda.FloatTensor(B, N, device=xyz.device).fill_(1e10)
-        output = torch.cuda.IntTensor(B, npoint)
-        temp = torch.cuda.FloatTensor(B, N).fill_(1e10)
+        output = torch.zeros(B, npoint, dtype=torch.int32, device=xyz.device)
+        temp = torch.full((B, N), fill_value=1e10, dtype=torch.float32, device=xyz.device)
 
         _C.furthest_point_sampling_wrapper(B, N, npoint, xyz, temp, output)
         return output
@@ -34,7 +35,11 @@ class FurthestPointSampling(Function):
         return None, None
 
 
-furthest_point_sample = FurthestPointSampling.apply
+def furthest_point_sample(xyz: torch.Tensor, npoint: int) -> torch.Tensor:
+    if torch.jit.is_scripting() or torch.jit.is_tracing():
+        return FurthestPointSampling.forward(torch.zeros(1), xyz, npoint)
+    else:
+        return FurthestPointSampling.apply(xyz, npoint)
 
 
 class BallQuery(Function):
@@ -54,7 +59,8 @@ class BallQuery(Function):
 
         b, n, _ = src.size()
         m = query.size(1)
-        idx = torch.cuda.IntTensor(b, m, k, device=src.device).zero_()
+        # idx = torch.cuda.IntTensor(b, m, k, device=src.device).zero_()
+        idx = torch.zeros(b, m, k, dtype=torch.int32, device=src.device)
         _C.ball_query_wrapper(b, n, m, radius, k, query, src, idx)
         return idx
 
@@ -63,7 +69,11 @@ class BallQuery(Function):
         return None, None, None, None
 
 
-ball_query = BallQuery.apply
+def ball_query(src: torch.Tensor, query: torch.Tensor, radius: float, k: int) -> torch.Tensor:
+    if torch.jit.is_scripting() or torch.jit.is_tracing():
+        return BallQuery.forward(torch.zeros(1), src, query, radius, k)
+    else:
+        return BallQuery.apply(src, query, radius, k)
 
 
 class ThreeNN(Function):
@@ -95,7 +105,11 @@ class ThreeNN(Function):
         return None, None
 
 
-three_nn = ThreeNN.apply
+def three_nn(unknown: torch.Tensor, known: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    if torch.jit.is_scripting() or torch.jit.is_tracing():
+        return ThreeNN.forward(torch.zeros(1), unknown, known)
+    else:
+        return ThreeNN.apply(unknown, known)
 
 
 class ThreeInterpolate(Function):
@@ -144,7 +158,11 @@ class ThreeInterpolate(Function):
         return grad_features, None, None
 
 
-three_interpolate = ThreeInterpolate.apply
+def three_interpolate(features: torch.Tensor, idx: torch.Tensor, weight: torch.Tensor) -> torch.Tensor:
+    if torch.jit.is_scripting() or torch.jit.is_tracing():
+        return ThreeInterpolate.forward(torch.zeros(1), features, idx, weight)
+    else:
+        return ThreeInterpolate.apply(features, idx, weight)
 
 
 def three_interpolation(known_xyz, know_feat, unknown_xyz):

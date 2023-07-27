@@ -10,7 +10,7 @@ All Rights Reserved 2018.
 #include <vector>
 #include "group_points_gpu.h"
 
-int group_points_grad_wrapper_fast(int b, int c, int n, int npoints, int nsample,
+void group_points_grad_wrapper_fast(int64_t b, int64_t c, int64_t n, int64_t npoints, int64_t nsample,
                                    at::Tensor grad_out_tensor, at::Tensor idx_tensor, at::Tensor grad_points_tensor)
 {
 
@@ -19,10 +19,9 @@ int group_points_grad_wrapper_fast(int b, int c, int n, int npoints, int nsample
     const float *grad_out = grad_out_tensor.data<float>();
 
     group_points_grad_kernel_launcher_fast(b, c, n, npoints, nsample, grad_out, idx, grad_points);
-    return 1;
 }
 
-int group_points_wrapper_fast(int b, int c, int n, int npoints, int nsample,
+void group_points_wrapper_fast(int64_t b, int64_t c, int64_t n, int64_t npoints, int64_t nsample,
                               at::Tensor points_tensor, at::Tensor idx_tensor, at::Tensor out_tensor)
 {
 
@@ -31,5 +30,4 @@ int group_points_wrapper_fast(int b, int c, int n, int npoints, int nsample,
     float *out = out_tensor.data<float>();
 
     group_points_kernel_launcher_fast(b, c, n, npoints, nsample, points, idx, out);
-    return 1;
 }

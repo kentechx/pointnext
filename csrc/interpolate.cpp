@@ -17,7 +17,7 @@ All Rights Reserved 2018.
 
 
 
-void three_nn_wrapper_fast(int b, int n, int m, at::Tensor unknown_tensor, 
+void three_nn_wrapper_fast(int64_t b, int64_t n, int64_t m, at::Tensor unknown_tensor,
     at::Tensor known_tensor, at::Tensor dist2_tensor, at::Tensor idx_tensor) {
     const float *unknown = unknown_tensor.data<float>();
     const float *known = known_tensor.data<float>();
@@ -28,7 +28,7 @@ void three_nn_wrapper_fast(int b, int n, int m, at::Tensor unknown_tensor,
 }
 
 
-void three_interpolate_wrapper_fast(int b, int c, int m, int n,
+void three_interpolate_wrapper_fast(int64_t b, int64_t c, int64_t m, int64_t n,
                          at::Tensor points_tensor,
                          at::Tensor idx_tensor,
                          at::Tensor weight_tensor,
@@ -42,7 +42,7 @@ void three_interpolate_wrapper_fast(int b, int c, int m, int n,
     three_interpolate_kernel_launcher_fast(b, c, m, n, points, idx, weight, out);
 }
 
-void three_interpolate_grad_wrapper_fast(int b, int c, int n, int m,
+void three_interpolate_grad_wrapper_fast(int64_t b, int64_t c, int64_t n, int64_t m,
                             at::Tensor grad_out_tensor,
                             at::Tensor idx_tensor,
                             at::Tensor weight_tensor,
