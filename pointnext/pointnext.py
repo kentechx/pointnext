@@ -167,7 +167,7 @@ class UpBlock(nn.Module):
     def route(self, src_x, src_xyz, dst_x, dst_xyz, neighbor_idx=None, dists=None):
         # use knn and weighted average to get the features
         src_xyz = rearrange(src_xyz, 'b d n -> b n d').contiguous()
-        dst_xyz = rearrange(dst_x, 'b d m -> b m d').contiguous()
+        dst_xyz = rearrange(dst_xyz, 'b d m -> b m d').contiguous()
         lerp_x = three_interpolation(src_xyz, src_x, dst_xyz)
         dst_x = torch.cat([dst_x, lerp_x], dim=1)  # (b, d+d', m)
         return dst_x
