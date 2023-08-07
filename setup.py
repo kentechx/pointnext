@@ -26,7 +26,7 @@ ext_modules = [
 setup(
     name='pointnext',
     packages=find_packages(exclude=("csrc")),
-    version='0.0.4',
+    version='0.0.5',
     license='MIT',
     description='PointNext - Pytorch',
     author='Kaidi Shen',
